@@ -1,5 +1,8 @@
+# frozen_string_literal: true
+
 # lib/game_objects.rb
 
+# The primary objects of the game: board, player, and the secret word
 module GameObjects
   # Prints out the hangman string and current obfusticated word
   class Board
@@ -24,8 +27,10 @@ module GameObjects
       response = gets.chomp.downcase
       if response == 'save'
         response
-      else if response.length > 1
+      elsif response.length > 1 # Only single character responses allowed
         guess
+      else
+        response
       end
     end
   end

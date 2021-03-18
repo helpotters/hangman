@@ -1,31 +1,39 @@
-# lib/hangman.rb
-require_relative './game_objects'
+# frozen_string_literal: true
+
+# lib/hangman.rb require_relative './game_objects'
 
 # Interconnets all game objects and controls the flow of the game for win and lose conditions
+require_relative './game_objects'
+require_relative './saveload'
+require 'yaml'
+
+# This controls the flow of the game, executing all relevant objects in one place
 class Hangman
   include GameObjects
+  include SaveLoad
 
   def initialize
     @dictionary = Dictionary.new
     @player = Player.new
     @board = Board.new
+    @guesses = 0
   end
 
   # play, save_game, load_game are what runs the game
   def play
-    guesses = 0
     end_game = false
-    until guesses == 7 || end_game == true
-      guess = run_game(@player, @board, @dictionary.word)
-      save_game if guess == 'save'
-      update unless guess == 'save' || @dictionary.correct_letter? == false
-      end_game = check_condition(@dictionary.word)
+    until @guesses == 6 || end_game == true
+      guess = play_round(@player, @board, @dictionary.word)
+      save if guess == 'save'
+      update unless guess == 'save' || @dictionary.correct_letter?(guess)
+      end_game = check_condition(@dictionary.word.split(''), '_')
+      p @guesses
     end
   end
 
   private
 
-  def run_game(player, board, word)
+  def play_round(player, board, word)
     board.print(word)
     player.guess
   end
@@ -41,8 +49,8 @@ class Hangman
   end
 
   def load_game(filename)
-    Game.new if filename == 'new'
-    YAML.safe_load("saves/#{filename}.yaml")
+    Hangman.new.play if filename == 'new'
+    YAML.safe_load("saves/#{filename}")
   end
 
   # win, lose, update are the game conditions
@@ -58,9 +66,16 @@ class Hangman
 
   def update
     @board.error
+    @guesses += 1
   end
 
-  def check_condition; end
+  def check_condition(word, string)
+    if word.none?(string)
+      win
+    elsif word.any?(string) && @guesses == 6
+      lose
+    end
+  end
 
   # controls the Hangman class creation for new or existing games
   def try_again
@@ -68,21 +83,6 @@ class Hangman
     response = gets.chomp.downcase
     start_game if response == 'y'
   end
-
-  public
-
-  def start_game
-    if Dir.exist?('save')
-      puts "Here's the existing saves, please type in the name or type 'new' for a new game."
-      puts Dir.entries('save')
-      filename = gets.chomp.downcase
-      Hangman.load_game(filename).play
-
-    else
-      Hangman.new.play
-    end
-  end
 end
 
-game = Hangman.new
-game.start_game
+SaveLoad.start_game
